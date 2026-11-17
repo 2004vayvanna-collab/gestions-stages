@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Étudiant — InternShip Manager</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .status-badge { display:inline-block; padding:0.2rem 0.8rem; border-radius:20px; font-size:0.78rem; font-weight:700; }
+    .status-en-cours { background:#fff3cd; color:#856404; }
+    .status-accepte  { background:var(--green-light); color:#155724; }
+    .status-refuse   { background:#f8d7da; color:#721c24; }
+    progress { width:100%; height:10px; border-radius:5px; accent-color: var(--blue-dark); }
+    /* Styles messages d'erreur formulaire 2 */
+    .err-msg2 {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.3rem;
+      font-weight: 600;
+    }
+    #compteur-motivation {
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+      color: var(--orange);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo-wrap">
+        <img src="logo.jpg" alt="InternShip Manager Logo">
+        <span class="logo-text">InternShip Manager</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="offres.html">Offres</a></li>
+          <li><a href="espace-etudiant.html" class="active">Espace Étudiant</a></li>
+          <li><a href="espace-entreprise.html">Espace Entreprise</a></li>
+          <li><a href="about.html">À propos</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="questionnaire.html">Questionnaire</a></li>
+          <li><a href="funpage.html">Fun Page 🎮</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="section-title">Espace Étudiant</h1>
+    <div class="dash-grid">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <h3>👤 Mon Profil</h3>
+        <div style="text-align:center;margin-bottom:1rem;">
+          <div style="width:60px;height:60px;border-radius:50%;background:var(--blue-pale);border:3px solid var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 0.5rem;">🎓</div>
+          <strong style="font-size:0.95rem;">Étudiant(e)</strong><br>
+          <small style="color:var(--gray-text);">Informatique — Bac+3</small>
+        </div>
+        <ul>
+          <li><a href="#candidature" class="active">📋 Mes Candidatures</a></li>
+          <li><a href="#suivi">📊 Suivi de Stage</a></li>
+          <li><a href="php/traitement-candidature.php">➕ Nouvelle Candidature (BD)</a></li>
+          <li><a href="offres.html">🔍 Voir les Offres</a></li>
+          <li><a href="contact.html">📧 Contacter</a></li>
+        </ul>
+      </aside>
+
+      <!-- Main Content -->
+      <div>
+        <div class="alert alert-info">ℹ️ Vous avez <strong>2 candidatures</strong> en attente de réponse.</div>
+
+        <!-- Candidatures Table (JS - Partie III) -->
+        <div id="candidature">
+          <h2 class="section-title">Mes Candidatures</h2>
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-end;">
+            <input type="text" id="recherche-keyword" placeholder="🔍 Rechercher (poste, entreprise, ville...)"
+              style="padding:0.5rem 1rem;border:1.5px solid #ddd;border-radius:7px;font-size:0.9rem;flex:1;min-width:180px;">
+            <select id="recherche-statut" style="padding:0.5rem 0.8rem;border:1.5px solid #ddd;border-radius:7px;font-size:0.9rem;">
+              <option value="">Tous les statuts</option>
+              <option value="En cours">En cours</option>
+              <option value="Accepté">Accepté</option>
+              <option value="Refusé">Refusé</option>
+            </select>
+            <button id="btn-rechercher" class="btn btn-primary" style="background:var(--blue-dark);color:white;border-radius:7px;padding:0.5rem 1rem;">🔍 Chercher</button>
+            <button id="btn-reset-recherche" class="btn btn-outline" style="padding:0.5rem 1rem;">✖ Reset</button>
+          </div>
+          <div id="notif-js" class="alert" style="display:none;margin-bottom:0.8rem;"></div>
+          <div class="table-wrap">
+            <table class="table-styled">
+              <thead>
+                <tr>
+                  <th>#</th><th>Poste</th><th>Entreprise</th>
+                  <th>Ville</th><th>Domaine</th><th>Date</th><th>Statut</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-candidatures"></tbody>
+            </table>
+          </div>
+          <p style="font-size:0.82rem;color:var(--gray-text);margin-top:0.4rem;">
+            <strong id="compteur-candidatures">0</strong> candidature(s) affichée(s)
+          </p>
+        </div>
+
+        <!-- ===== FORMULAIRE 1 : Ajout rapide (envoi vers PHP) ===== -->
+        <div id="ajout-candidature" style="margin-top:1.5rem;">
+          <h2 class="section-title" style="font-size:1rem;">➕ Ajouter une candidature manuellement</h2>
+          <form id="form-ajout-candidature"
+                method="POST"
+                action="php/traitement-candidature.php"
+                onsubmit="return validerFormAjout()"
+                style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;background:#f8faff;padding:1.2rem;border-radius:10px;border:1.5px dashed var(--blue-light);">
+
+            <!-- Champ hidden pour identifier l'action -->
+            <input type="hidden" name="action" value="ajouter">
+
+            <div class="form-group">
+              <label>Poste *</label>
+              <input type="text" id="ajout-poste" name="poste" placeholder="ex: Développeur Web" minlength="3">
+              <span id="err-ajout-poste" style="color:red;font-size:12px;display:none;"></span>
+            </div>
+            <div class="form-group">
+              <label>Entreprise *</label>
+              <input type="text" id="ajout-entreprise" name="entreprise" placeholder="ex: TechVision">
+              <span id="err-ajout-entreprise" style="color:red;font-size:12px;display:none;"></span>
+            </div>
+            <div class="form-group">
+              <label>Ville *</label>
+              <input type="text" id="ajout-ville" name="ville" placeholder="ex: Tunis">
+              <span id="err-ajout-ville" style="color:red;font-size:12px;display:none;"></span>
+            </div>
+            <div class="form-group">
+              <label>Domaine</label>
+              <select id="ajout-domaine" name="domaine">
+                <option value="Informatique">Informatique</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Design">Design</option>
+                <option value="Finance">Finance</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Statut</label>
+              <select id="ajout-statut" name="statut">
+                <option value="En cours">En cours</option>
+                <option value="Accepté">Accepté</option>
+                <option value="Refusé">Refusé</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button type="submit" id="btn-ajouter-candidature" class="btn btn-secondary" style="width:100%;">➕ Ajouter</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Suivi de stage -->
+        <div id="suivi" style="margin-top:2rem;">
+          <h2 class="section-title">Suivi de Stage — PixelStudio</h2>
+          <div class="alert alert-success">✅ Convention signée le 03/03/2026 — Stage démarré</div>
+          <p style="margin-bottom:0.5rem;font-weight:600;">Progression globale :</p>
+          <progress value="35" max="100"></progress>
+          <p style="font-size:0.85rem;color:var(--gray-text);margin-top:0.3rem;">Semaine 1 sur 12 — 35% complété</p>
+        </div>
+
+        <!-- ===== FORMULAIRE 2 : Nouvelle Candidature (validation JS complète) ===== -->
+        <div id="postuler" style="margin-top:2rem;">
+          <h2 class="section-title">Nouvelle Candidature</h2>
+
+          <!--
+            FORMULAIRE 2 — Le plus grand nombre de champs
+            Validation JS : obligatoire, email, téléphone (regex), date, longueur, checkbox
+            Envoi vers PHP : traitement-candidature.php
+          -->
+          <form class="form-card"
+                id="form-nouvelle-candidature"
+                action="php/traitement-candidature.php"
+                method="POST"
+                onsubmit="return validerNouvelleCandidate()">
+
+            <div class="form-grid">
+
+              <!-- Champ 1 : Nom (obligatoire) -->
+              <div class="form-group">
+                <label for="nom">Nom complet *</label>
+                <input type="text" id="nom" name="nom" placeholder="Votre nom et prénom" required>
+                <div class="err-msg2" id="err-nom2"></div>
+              </div>
+
+              <!-- Champ 2 : Email (regex) -->
+              <div class="form-group">
+                <label for="email-etu">Email universitaire *</label>
+                <input type="email" id="email-etu" name="email" placeholder="prenom.nom@univ.tn" required>
+                <div class="err-msg2" id="err-email2"></div>
+              </div>
+
+              <!-- Champ 3 : Téléphone (regex 8 chiffres) -->
+              <div class="form-group">
+                <label for="tel">Téléphone * <small style="color:var(--gray-text);">(8 chiffres)</small></label>
+                <input type="tel" id="tel" name="tel" placeholder="ex: 22334455"
+                       pattern="[0-9]{8}" maxlength="8">
+                <div class="err-msg2" id="err-tel2"></div>
+              </div>
+
+              <!-- Champ 4 : Niveau (select obligatoire) -->
+              <div class="form-group">
+                <label for="niveau">Niveau d'études *</label>
+                <select id="niveau" name="niveau" required>
+                  <option value="">-- Sélectionner --</option>
+                  <option value="bac2">Bac+2</option>
+                  <option value="bac3">Bac+3 (Licence)</option>
+                  <option value="bac4">Bac+4 (Master 1)</option>
+                  <option value="bac5">Bac+5 (Master 2 / Ingénieur)</option>
+                </select>
+                <div class="err-msg2" id="err-niveau2"></div>
+              </div>
+
+              <!-- Champ 5 : Offre (select obligatoire) -->
+              <div class="form-group">
+                <label for="offre-sel">Offre de stage *</label>
+                <select id="offre-sel" name="offre" required>
+                  <option value="">-- Choisir une offre --</option>
+                  <option value="webdev">Développeur Web Front-End — TechVision</option>
+                  <option value="marketing">Analyste Marketing — MediaPro</option>
+                  <option value="designer">Designer UX/UI — PixelStudio</option>
+                  <option value="backend">Développeur Back-End — InnoSoft</option>
+                </select>
+                <div class="err-msg2" id="err-offre2"></div>
+              </div>
+
+              <!-- Champ 6 : Date disponibilité (obligatoire + future) -->
+              <div class="form-group">
+                <label for="disponibilite">Disponible à partir du *</label>
+                <input type="date" id="disponibilite" name="dispo" required>
+                <div class="err-msg2" id="err-dispo2"></div>
+              </div>
+
+              <!-- Champ 7 : CV (fichier) -->
+              <div class="form-group">
+                <label for="cv">CV (PDF) *</label>
+                <input type="file" id="cv" name="cv" accept=".pdf,.doc,.docx">
+                <div class="err-msg2" id="err-cv2"></div>
+              </div>
+
+              <!-- Champ 8 : Portfolio -->
+              <div class="form-group">
+                <label for="portfolio">Lien Portfolio / GitHub</label>
+                <input type="url" id="portfolio" name="portfolio" placeholder="https://github.com/...">
+                <div class="err-msg2" id="err-portfolio2"></div>
+              </div>
+
+              <!-- Champ 9 : Compétences (checkbox — au moins 1) -->
+              <div class="form-group full">
+                <label>Compétences techniques * <small style="color:var(--gray-text);">(au moins 1)</small></label>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="skills[]" value="html"> HTML/CSS</label>
+                  <label><input type="checkbox" name="skills[]" value="js"> JavaScript</label>
+                  <label><input type="checkbox" name="skills[]" value="php"> PHP</label>
+                  <label><input type="checkbox" name="skills[]" value="python"> Python</label>
+                  <label><input type="checkbox" name="skills[]" value="sql"> SQL</label>
+                  <label><input type="checkbox" name="skills[]" value="react"> React</label>
+                </div>
+                <div class="err-msg2" id="err-skills2"></div>
+              </div>
+
+              <!-- Champ 10 : Type de stage (radio) -->
+              <div class="form-group full">
+                <label>Type de stage préféré *</label>
+                <div class="radio-group">
+                  <label><input type="radio" name="type_stage" value="presentiel"> Présentiel</label>
+                  <label><input type="radio" name="type_stage" value="teletravail"> Télétravail</label>
+                  <label><input type="radio" name="type_stage" value="hybride" checked> Hybride</label>
+                </div>
+              </div>
+
+              <!-- Champ 11 : Lettre de motivation (min 50 caractères) -->
+              <div class="form-group full">
+                <label for="motivation">Lettre de motivation * <small style="color:var(--gray-text);">(minimum 50 caractères)</small></label>
+                <textarea id="motivation" name="motivation"
+                  placeholder="Expliquez pourquoi vous postulez à ce stage..." rows="5"></textarea>
+                <div id="compteur-motivation">Encore 50 caractères minimum</div>
+                <div class="err-msg2" id="err-motivation2"></div>
+              </div>
+
+              <!-- Champ 12 : Note minimale (plage) -->
+              <div class="form-group full">
+                <label for="note-min">Note minimale souhaitée : <strong id="note-val">14</strong>/20</label>
+                <input type="range" id="note-min" name="note_min" min="10" max="20" value="14"
+                       oninput="document.getElementById('note-val').textContent=this.value">
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-secondary">📤 Envoyer ma candidature</button>
+              <button type="reset"  class="btn btn-outline"
+                      onclick="reinitialiserFormulaire2()">🔄 Réinitialiser</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>InternShip Manager</h4>
+        <p>Plateforme universitaire de gestion des stages académiques.</p>
+        <p>© 2026 InternShip Manager</p>
+      </div>
+      <div class="footer-col">
+        <h4>Navigation</h4>
+        <a href="index.html">Accueil</a>
+        <a href="offres.html">Offres de Stage</a>
+        <a href="espace-etudiant.html">Espace Étudiant</a>
+        <a href="espace-entreprise.html">Espace Entreprise</a>
+        <a href="about.html">À propos</a>
+        <a href="contact.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p>📧 <a href="mailto:contact@internship-manager.tn">contact@internship-manager.tn</a></p>
+        <p>📞 +216 71 000 000</p>
+        <p>📍 Université de Tunis, Tunis, Tunisie</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      Site Web de Gestion des Stages — Projet de Développement Web 2026
+    </div>
+  </footer>
+
+  <script src="js/espace-etudiant.js"></script>
+  <script>
+  /* ============================================================
+     VALIDATION FORMULAIRE 1 : Ajout rapide
+     ============================================================ */
+  function validerFormAjout() {
+    let ok = true;
+
+    // Poste — longueur min 3
+    const poste = document.getElementById('ajout-poste').value.trim();
+    const errPoste = document.getElementById('err-ajout-poste');
+    if (poste.length < 3) {
+      errPoste.innerText = '⚠️ Le poste doit faire au moins 3 caractères.';
+      errPoste.style.display = 'block';
+      ok = false;
+    } else { errPoste.style.display = 'none'; }
+
+    // Entreprise — obligatoire
+    const ent = document.getElementById('ajout-entreprise').value.trim();
+    const errEnt = document.getElementById('err-ajout-entreprise');
+    if (!ent) {
+      errEnt.innerText = "⚠️ L'entreprise est obligatoire.";
+      errEnt.style.display = 'block';
+      ok = false;
+    } else { errEnt.style.display = 'none'; }
+
+    // Ville — obligatoire
+    const ville = document.getElementById('ajout-ville').value.trim();
+    const errVille = document.getElementById('err-ajout-ville');
+    if (!ville) {
+      errVille.innerText = '⚠️ La ville est obligatoire.';
+      errVille.style.display = 'block';
+      ok = false;
+    } else { errVille.style.display = 'none'; }
+
+    return ok;
+  }
+
+  /* ============================================================
+     VALIDATION FORMULAIRE 2 : Nouvelle Candidature (complet)
+     Critères : obligatoire, regex email, regex téléphone,
+                longueur, plage date, checkbox, select
+     ============================================================ */
+  function validerNouvelleCandidate() {
+    let ok = true;
+
+    /* --- 1. Nom (obligatoire) --- */
+    const nom = document.getElementById('nom').value.trim();
+    const errNom = document.getElementById('err-nom2');
+    if (nom === '') {
+      errNom.innerText = '⚠️ Le nom complet est obligatoire.';
+      errNom.style.display = 'block';
+      ok = false;
+    } else {
+      errNom.style.display = 'none';
+    }
+
+    /* --- 2. Email (obligatoire + regex) --- */
+    const email = document.getElementById('email-etu').value.trim();
+    const errEmail = document.getElementById('err-email2');
+    const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email === '') {
+      errEmail.innerText = "⚠️ L'email universitaire est obligatoire.";
+      errEmail.style.display = 'block';
+      ok = false;
+    } else if (!regexEmail.test(email)) {
+      errEmail.innerText = '⚠️ Format invalide (ex: prenom.nom@univ.tn).';
+      errEmail.style.display = 'block';
+      ok = false;
+    } else {
+      errEmail.style.display = 'none';
+    }
+
+    /* --- 3. Téléphone (regex : exactement 8 chiffres) --- */
+    const tel = document.getElementById('tel').value.trim();
+    const errTel = document.getElementById('err-tel2');
+    const regexTel = /^[0-9]{8}$/;
+    if (tel === '') {
+      errTel.innerText = '⚠️ Le téléphone est obligatoire.';
+      errTel.style.display = 'block';
+      ok = false;
+    } else if (!regexTel.test(tel)) {
+      errTel.innerText = '⚠️ Le téléphone doit contenir exactement 8 chiffres.';
+      errTel.style.display = 'block';
+      ok = false;
+    } else {
+      errTel.style.display = 'none';
+    }
+
+    /* --- 4. Niveau (select obligatoire) --- */
+    const niveau = document.getElementById('niveau').value;
+    const errNiveau = document.getElementById('err-niveau2');
+    if (!niveau) {
+      errNiveau.innerText = "⚠️ Veuillez sélectionner votre niveau d'études.";
+      errNiveau.style.display = 'block';
+      ok = false;
+    } else {
+      errNiveau.style.display = 'none';
+    }
+
+    /* --- 5. Offre (select obligatoire) --- */
+    const offre = document.getElementById('offre-sel').value;
+    const errOffre = document.getElementById('err-offre2');
+    if (!offre) {
+      errOffre.innerText = "⚠️ Veuillez choisir une offre de stage.";
+      errOffre.style.display = 'block';
+      ok = false;
+    } else {
+      errOffre.style.display = 'none';
+    }
+
+    /* --- 6. Date disponibilité (obligatoire + doit être future) --- */
+    const dispo = document.getElementById('disponibilite').value;
+    const errDispo = document.getElementById('err-dispo2');
+    if (!dispo) {
+      errDispo.innerText = '⚠️ La date de disponibilité est obligatoire.';
+      errDispo.style.display = 'block';
+      ok = false;
+    } else {
+      const dateChoisie = new Date(dispo);
+      const aujourdhui  = new Date();
+      aujourdhui.setHours(0, 0, 0, 0);
+      if (dateChoisie <= aujourdhui) {
+        errDispo.innerText = '⚠️ La date doit être dans le futur.';
+        errDispo.style.display = 'block';
+        ok = false;
+      } else {
+        errDispo.style.display = 'none';
+      }
+    }
+
+    /* --- 7. CV (fichier obligatoire) --- */
+    const cv = document.getElementById('cv').files.length;
+    const errCv = document.getElementById('err-cv2');
+    if (cv === 0) {
+      errCv.innerText = '⚠️ Veuillez joindre votre CV.';
+      errCv.style.display = 'block';
+      ok = false;
+    } else {
+      errCv.style.display = 'none';
+    }
+
+    /* --- 8. Portfolio (URL valide si rempli) --- */
+    const portfolio = document.getElementById('portfolio').value.trim();
+    const errPortfolio = document.getElementById('err-portfolio2');
+    if (portfolio !== '') {
+      const regexUrl = /^https?:\/\/.+/;
+      if (!regexUrl.test(portfolio)) {
+        errPortfolio.innerText = '⚠️ URL invalide (doit commencer par http:// ou https://).';
+        errPortfolio.style.display = 'block';
+        ok = false;
+      } else {
+        errPortfolio.style.display = 'none';
+      }
+    } else {
+      errPortfolio.style.display = 'none';
+    }
+
+    /* --- 9. Compétences (au moins 1 checkbox cochée) --- */
+    const skills = document.querySelectorAll('input[name="skills[]"]:checked');
+    const errSkills = document.getElementById('err-skills2');
+    if (skills.length === 0) {
+      errSkills.innerText = '⚠️ Veuillez cocher au moins une compétence.';
+      errSkills.style.display = 'block';
+      ok = false;
+    } else {
+      errSkills.style.display = 'none';
+    }
+
+    /* --- 10. Motivation (longueur min 50 caractères) --- */
+    const motivation = document.getElementById('motivation').value.trim();
+    const errMotivation = document.getElementById('err-motivation2');
+    if (motivation.length < 50) {
+      errMotivation.innerText = '⚠️ La lettre de motivation doit contenir au moins 50 caractères.';
+      errMotivation.style.display = 'block';
+      ok = false;
+    } else {
+      errMotivation.style.display = 'none';
+    }
+
+    return ok; // true → envoie vers PHP | false → bloque
+  }
+
+  /* Compteur en temps réel pour la lettre de motivation */
+  document.addEventListener('DOMContentLoaded', function () {
+    const motivation = document.getElementById('motivation');
+    const compteur   = document.getElementById('compteur-motivation');
+    if (motivation && compteur) {
+      motivation.addEventListener('input', function () {
+        const restants = 50 - motivation.value.trim().length;
+        compteur.textContent = restants > 0
+          ? 'Encore ' + restants + ' caractères minimum'
+          : '✅ Longueur suffisante';
+        compteur.style.color = restants > 0 ? 'var(--orange)' : 'var(--green)';
+      });
+    }
+
+    /* Affiche la valeur du slider note en temps réel */
+    const noteSlider = document.getElementById('note-min');
+    if (noteSlider) {
+      noteSlider.addEventListener('input', function () {
+        document.getElementById('note-val').textContent = this.value;
+      });
+    }
+  });
+
+  /* Réinitialiser les messages d'erreur du formulaire 2 */
+  function reinitialiserFormulaire2() {
+    const erreurs = document.querySelectorAll('.err-msg2');
+    erreurs.forEach(function (el) {
+      el.style.display = 'none';
+      el.innerText = '';
+    });
+    const compteur = document.getElementById('compteur-motivation');
+    if (compteur) {
+      compteur.textContent = 'Encore 50 caractères minimum';
+      compteur.style.color = 'var(--orange)';
+    }
+  }
+  </script>
+</body>
+</html>

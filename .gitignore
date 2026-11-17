@@ -1,0 +1,23 @@
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+*.local.php
+php/config.local.php
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dependencies and generated files
+vendor/
+node_modules/
+*.log
+*.sql.gz
+*.sql.zip
+
+# User-generated content and local backups
+uploads/
+backups/
